@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Xave's event planning lesson!</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .scramble-sentence {
+      padding: 10px;
+      background: rgba(255, 255, 255, 0.9);
+      margin-bottom: 8px;
+      border-radius: 6px;
+      cursor: move;
+      font-size: 1rem;
+    }
+    #scene-image img {
+      max-width: 100%;
+      height: auto;
+      display: block;
+      margin: 0 auto 20px;
+    }
+  </style>
+</head>
+<body>
+  
+  <!-- Homepage Overlay -->
+  <div id="overlay-content">
+    <div>
+      <p id="subtitle">Get the job done!</p>
+      <div class="button-group">
+        <button onclick="startGame()">Play Now</button>
+        <button onclick="window.open('https://example.com', '_blank')">About the Creator</button>
+        
+      </div>
+    </div>
+  </div>
+
+  
+ <!-- Game Container -->
+<div id="game-container" style="display: none;">
+  <div id="scene-image"></div>
+  <div id="scene-text"></div>
+<div id="challenge-info" style="margin-bottom: 20px; font-family: monospace; background: #111; color: #0ff; padding: 10px; border-radius: 5px;"></div>  
+
+  <div id="sentence-scramble" style="display:none;"></div>
+  <div id="scramble-feedback" style="display:none;"></div>
+  <div id="scene6-ui"></div>
+  <div id="sceneFillInTheBlank"></div>
+  <div id="choices-container" class="decision-buttons"></div>
+  <div id="scene-container"></div>
+  <div id="email-challenge-container"></div>
+
+
+  <!-- ... -->
+
+</div>
+</div> <!-- close game-container -->
+
+
+
+
+
+
+
+  
+
+
+  <!-- Sortable.js and Game Script -->
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
