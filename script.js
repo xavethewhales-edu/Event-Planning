@@ -1,3 +1,54 @@
+/* ==== Brand signature & banner ======================================== */
+(function attachBrandSignature(){
+  const SIGN = Object.freeze({
+    brand: "xavethewhales-games",
+    owner: "xavethewhales-edu",
+    site : "xavethewhales-edu.github.io",
+    built: new Date().toISOString().slice(0,10)
+  });
+
+  // Non-writable, non-configurable global (soft provenance)
+  try {
+    Object.defineProperty(window, "__XWTW_SIGNATURE__", {
+      value: SIGN, writable: false, configurable: false, enumerable: false
+    });
+  } catch(_) {}
+
+  // Console banner
+  try {
+    console.log(
+      "%cBuilt by " + SIGN.brand + " · © " + (new Date().getFullYear()),
+      "background:#00ffff;color:#000;font-weight:700;padding:2px 6px;border-radius:6px"
+    );
+  } catch(_) {}
+
+  // Invisible HTML comment (shows up in page source)
+  try { document.documentElement.appendChild(document.createComment(
+    " Built by " + SIGN.brand + " (" + SIGN.site + ") "
+  )); } catch(_) {}
+})();
+
+/* ==== Soft provenance check + tiny helpers ============================ */
+(function softProvenance(){
+  // Warn (non-fatal) if signature is missing or altered
+  try {
+    const s = window.__XWTW_SIGNATURE__ || {};
+    if (s.brand !== "xavethewhales-games") {
+      console.warn("[Provenance] Signature missing or altered. If you’re seeing this on a mirror, visit:",
+                   "https://xavethewhales-edu.github.io/");
+    }
+  } catch(_) {}
+
+  // Helper: normalize asset paths for GitHub Pages (no leading slash)
+  window.asRel = function asRel(p){ return (typeof p === "string") ? p.replace(/^\//, "") : p; };
+
+  // Helper: safe register functions (no-ops if your register* aren’t present)
+  window.registerNode     = window.registerNode     || function(){};
+  window.registerListener = window.registerListener || function(t,e,h){ try{ t.addEventListener(e,h); }catch(_){} };
+  window.registerCleanup  = window.registerCleanup  || function(){};
+})();
+
+
 const scenes = {
   scene1: {
     type: "text",

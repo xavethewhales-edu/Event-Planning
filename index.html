@@ -1,8 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <!-- Anti-mirror + frame-buster (optional but recommended) -->
+  <script>
+  (function () {
+    const CANON_HOST = "xavethewhales-edu.github.io";
+    const CANON_REPO = "THIS-REPO-FOLDER"; // ← change per game folder
+    const ALLOW = new Set([CANON_HOST, "localhost", "127.0.0.1"]);
+    try {
+      if (top !== self) { top.location = location; return; }
+      if (!ALLOW.has(location.hostname)) {
+        location.replace("https://" + CANON_HOST + "/" + CANON_REPO + "/" + location.search + location.hash);
+      }
+    } catch (_) {}
+  })();
+  </script>
+
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <base href="./" />
   <title>Xave's event planning lesson!</title>
   <link rel="stylesheet" href="style.css" />
   <style>
@@ -20,54 +36,171 @@
       display: block;
       margin: 0 auto 20px;
     }
+    /* Optional: disabled Resume look */
+    #resume-btn[disabled] { opacity: .5; cursor: not-allowed; }
   </style>
 </head>
 <body>
-  
   <!-- Homepage Overlay -->
   <div id="overlay-content">
     <div>
       <p id="subtitle">Get the job done!</p>
       <div class="button-group">
         <button onclick="startGame()">Play Now</button>
+        <button id="resume-btn" disabled>Resume game</button>
         <button onclick="window.open('https://xavier-b.carrd.co/', '_blank')">About the Creator</button>
-        
       </div>
     </div>
   </div>
 
-  
- <!-- Game Container -->
-<div id="game-container" style="display: none;">
-  <div id="scene-image"></div>
-  <div id="scene-text"></div>
-<div id="challenge-info" style="margin-bottom: 20px; font-family: monospace; background: #111; color: #0ff; padding: 10px; border-radius: 5px;"></div>  
+  <!-- Game Container -->
+  <div id="game-container" style="display: none;">
+    <div id="scene-image"></div>
+    <div id="scene-text"></div>
+    <div id="challenge-info" style="margin-bottom: 20px; font-family: monospace; background: #111; color: #0ff; padding: 10px; border-radius: 5px;"></div>
 
-  <div id="sentence-scramble" style="display:none;"></div>
-  <div id="scramble-feedback" style="display:none;"></div>
-  <div id="scene6-ui"></div>
-  <div id="sceneFillInTheBlank"></div>
-  <div id="choices-container" class="decision-buttons"></div>
-  <div id="scene-container"></div>
-  <div id="email-challenge-container"></div>
-
-
-  <!-- ... -->
-
-</div>
-</div> <!-- close game-container -->
-
-
-
-
-
-
-
-  
-
+    <div id="sentence-scramble" style="display:none;"></div>
+    <div id="scramble-feedback" style="display:none;"></div>
+    <div id="scene6-ui"></div>
+    <div id="sceneFillInTheBlank"></div>
+    <div id="choices-container" class="decision-buttons"></div>
+    <div id="scene-container"></div>
+    <div id="email-challenge-container"></div>
+  </div> <!-- /game-container -->
 
   <!-- Sortable.js and Game Script -->
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
   <script src="script.js"></script>
+
+  <!-- Resume v2 (fixture) -->
+  <script>
+  (function () {
+    const SAVE_KEY = 'game_progress_v1';
+    const $ = s => document.querySelector(s);
+    const $id = s => document.getElementById(s);
+
+    function getHomeEl() {
+      return document.getElementById('overlay-content')
+          || document.getElementById('overlay')
+          || document.getElementById('home')
+          || document.getElementById('homepage');
+    }
+    function getGameEl() { return $id('game-container'); }
+
+    function readSave(){ try { return JSON.parse(localStorage.getItem(SAVE_KEY)); } catch { return null; } }
+    function writeSave(o){ try { localStorage.setItem(SAVE_KEY, JSON.stringify(o)); } catch {} }
+
+    function scenesMap() {
+      if (window.scenes) return window.scenes;
+      try { return (typeof scenes !== 'undefined') ? scenes : null; } catch { return null; }
+    }
+    function sceneExists(id) {
+      const sm = scenesMap();
+      if (!sm || !id) return false;
+      if (Array.isArray(sm)) return sm.some(x => x && x.id === id);
+      return !!sm[id];
+    }
+
+    function showHome(){ const h=getHomeEl(), g=getGameEl(); if (h) h.style.display=''; if (g) g.style.display='none'; }
+    function hideHome(){ const h=getHomeEl(), g=getGameEl(); if (h) h.style.display='none'; if (g) g.style.display='block'; }
+
+    function renderedSomething() {
+      const g = getGameEl(); if (!g) return false;
+      if ([...g.children].some(n => n && n.offsetParent !== null)) return true;
+      const featureIds = [
+        'scene-video','scene-image','scene-text','iamc-ui','video-choice-wrap',
+        'video-multi-question-options','video-multi-audio-question-ui',
+        'sceneFillInTheBlank','sentence-scramble','dashboard-wrap','hangman',
+        'email-challenge-container','buckets','hotspots','particle-swapper',
+        'conj-race','survivor-quiz'
+      ];
+      return featureIds.some(id => { const el = $id(id) || (id==='scene-image'&&$id('scene-image')?.querySelector('img')); return el && (el.offsetParent !== null || el.tagName==='IMG'); });
+    }
+    function pollForRender(maxMs=2500, stepMs=80){
+      return new Promise(res=>{
+        const t0=performance.now();
+        (function tick(){
+          if (renderedSomething()) return res(true);
+          if (performance.now()-t0>=maxMs) return res(false);
+          setTimeout(tick, stepMs);
+        })();
+      });
+    }
+
+    async function tryResume(){
+      const saved = readSave();
+      const target = saved?.lastScene;
+      if (!target || !sceneExists(target)) { showHome(); updateResumeBtn(); return; }
+
+      hideHome();
+
+      if (typeof window.loadScene !== 'function') {
+        let tries=0;
+        await new Promise(r => (function wait(){
+          if (typeof window.loadScene === 'function') return r();
+          if (tries++>200) return r();
+          setTimeout(wait,30);
+        })());
+      }
+      if (typeof window.loadScene !== 'function') { showHome(); updateResumeBtn(); return; }
+
+      try {
+        window.loadScene(target);
+        const ok = await pollForRender(2500,80);
+        if (!ok) showHome();
+      } catch(e) {
+        console.error('[Resume] error:', e);
+        showHome();
+      } finally {
+        updateResumeBtn();
+      }
+    }
+
+    function updateResumeBtn(){
+      const btn = $id('resume-btn');
+      if (!btn) return;
+      const last = readSave()?.lastScene;
+      const ok = !!last && sceneExists(last);
+      btn.disabled = !ok;
+      btn.onclick = ok ? tryResume : null;
+    }
+
+    // Hook loadScene to keep SAVE_KEY updated
+    (function hookLoadScene(){
+      function install(orig){
+        window.loadScene = function(id){
+          const r = orig.apply(this, arguments);
+          const saved = readSave() || {};
+          saved.lastScene = id;
+          if (window.progress) {
+            saved.flags    = window.progress.flags    || saved.flags || {};
+            saved.unlocked = Array.from(window.progress.unlocked || saved.unlocked || []);
+          }
+          writeSave(saved);
+          try { updateResumeBtn(); } catch {}
+          return r;
+        };
+        console.log('[Resume] loadScene hooked.');
+      }
+      if (typeof window.loadScene === 'function') install(window.loadScene);
+      else {
+        let tries=0;
+        (function wait(){
+          if (typeof window.loadScene === 'function') return install(window.loadScene);
+          if (tries++>200) return;
+          setTimeout(wait,30);
+        })();
+      }
+    })();
+
+    window.addEventListener('DOMContentLoaded', () => { showHome(); updateResumeBtn(); });
+
+    // Optional dev helper
+    window.resetProgressToHome = function(){
+      localStorage.removeItem(SAVE_KEY);
+      showHome(); updateResumeBtn();
+    };
+  })();
+  </script>
 </body>
 </html>
